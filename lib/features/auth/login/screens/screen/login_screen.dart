@@ -1,11 +1,12 @@
-
+import 'package:ecommerce_app_huma_volve/core/network/api_client.dart';
+import 'package:ecommerce_app_huma_volve/features/auth/login/screens/services/login_servic.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/widgets/custom_text_field.dart';
-import '../../../../core/widgets/primary_button.dart';
-import '../../../../core/theme.dart';
-import '../../../main_navigation/screens/main_navigation_screen.dart';
-import '../../sign_up/screens/sign_up_screen.dart';
+import '../../../../../core/widgets/custom_text_field.dart';
+import '../../../../../core/widgets/primary_button.dart';
+import '../../../../../core/theme.dart';
+import '../../../../main_navigation/screens/main_navigation_screen.dart';
+import '../../../sign_up/screens/sign_up_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,11 +19,46 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
-
+  late final LoginServic loginServic;
+  late final ApiClient apiClient;
+  bool isLoading=false;
+  Future<void>_login () async {
+                    if (_formKey.currentState?.validate() ?? false) {
+                      setState(() {
+                        isLoading=true;
+                      });
+                      try {
+                        final respone = await loginServic.login(
+                          email: emailController.text.trim(),
+                          password: passwordController.text.trim(),
+                        );
+                        debugPrint('Acess Token:${respone.accessToken}');
+                        debugPrint('refresh Token:${respone.refreshToken}');
+                        setState(() {
+                          isLoading=false;
+                        });
+                        if(!mounted)return;
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => MainNavigationScreen(),
+                          ),
+                        );
+                      } on Exception catch (e) {
+                        setState(() {
+                          isLoading=false;
+                        });
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(e.toString())));
+                      }
+                    }
+                  }
   @override
   void initState() {
     emailController = TextEditingController();
     passwordController = TextEditingController();
+    apiClient = ApiClient();
+    loginServic = LoginServic(apiClient);
 
     super.initState();
   }
@@ -51,15 +87,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
                 Text(
                   'Welcome Back!',
-                  style: Theme.of(context).textTheme.displayLarge
-                      ?.copyWith(fontSize: 32),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.displayLarge?.copyWith(fontSize: 32),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Login to continue your shopping',
-                  style: Theme.of(context).textTheme.bodyMedium
-                      ?.copyWith(fontSize: 16),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 64),
@@ -108,15 +146,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
                 PrimaryButton(
                   text: 'Login',
-                  onPressed: () {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (context) => MainNavigationScreen(),
-                        ),
-                      );
-                    }
-                  },
+                  onPressed:_login,
+                  isLoading: isLoading,
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -128,11 +159,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         Navigator.pushReplacement(
                           context,
                           PageRouteBuilder(
-                            pageBuilder: (
-                              context,
-                              animation,
-                              secondaryAnimation,
-                            ) => const SignUpScreen(),
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    const SignUpScreen(),
                             transitionsBuilder:
                                 (
                                   context,
